@@ -7,6 +7,8 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   ResponsiveContainer,
+  Legend,
+  Tooltip,
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,6 +81,12 @@ function ResultsPage() {
   const chartData = keys.map((key) => ({
     dimension: DIMENSION_LABELS[key],
     score: Number(result.dimensionAverages[key].toFixed(2)),
+    weighted: Number(
+      Math.min(
+        5,
+        result.dimensionAverages[key] * (assessment.weights[key] / 100) * 4,
+      ).toFixed(2),
+    ),
   }));
   const hardGates = result.gates.filter((g) => g.level === "hard");
   const softGates = result.gates.filter((g) => g.level === "soft");
@@ -140,11 +148,11 @@ function ResultsPage() {
 
           <div className="surface-panel rounded-xl p-6">
             <h2 className="text-sm font-bold uppercase tracking-wide text-primary">
-              Dimension profile
+              Dimension profile — weight sensitivity
             </h2>
-            <div className="h-[320px] w-full">
+            <div className="h-[360px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={chartData} outerRadius="70%">
+                <RadarChart data={chartData} outerRadius="66%">
                   <PolarGrid stroke="var(--color-border)" />
                   <PolarAngleAxis
                     dataKey="dimension"
@@ -156,15 +164,39 @@ function ResultsPage() {
                     tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
                   />
                   <Radar
-                    name="Average score"
+                    name="Raw Score"
                     dataKey="score"
+                    stroke="var(--color-muted-foreground)"
+                    strokeDasharray="4 3"
+                    fill="var(--color-muted-foreground)"
+                    fillOpacity={0.15}
+                  />
+                  <Radar
+                    name="Weighted Impact"
+                    dataKey="weighted"
                     stroke="var(--color-primary)"
                     fill="var(--color-primary)"
-                    fillOpacity={0.35}
+                    fillOpacity={0.5}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--color-card)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "0.5rem",
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={28}
+                    wrapperStyle={{ fontSize: 12 }}
                   />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Weighted Impact = dimension score x (weight % / 100) x 4, capped at 5.0.
+            </p>
           </div>
         </section>
 
