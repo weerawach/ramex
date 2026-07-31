@@ -40,7 +40,7 @@ export function ScaleField({
         max={5}
         step={1}
         value={[value]}
-        onValueChange={([v]) => onChange(v)}
+        onValueChange={([v]) => onChange(v ?? value)}
         aria-label={label}
       />
       <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">

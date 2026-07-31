@@ -66,7 +66,7 @@ export function WeightConfig({
               max={100}
               step={5}
               value={[weights[key]]}
-              onValueChange={([v]) => onChange({ ...weights, [key]: v })}
+              onValueChange={([v]) => onChange({ ...weights, [key]: v ?? weights[key] })}
               aria-label={`${DIMENSION_LABELS[key]} weight slider`}
             />
           </div>
