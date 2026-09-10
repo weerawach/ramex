@@ -15,6 +15,7 @@ export type ProjectRecord = {
   createdAt: string;
 };
 
+const EMPTY: ProjectRecord[] = [];
 let projects: ProjectRecord[] = [];
 let hydrated = false;
 const listeners = new Set<() => void>();
@@ -51,7 +52,9 @@ export function getProjects(): ProjectRecord[] {
 
 export function subscribe(listener: () => void) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 export function useProjects(): ProjectRecord[] {
@@ -61,7 +64,7 @@ export function useProjects(): ProjectRecord[] {
       hydrate();
       return projects;
     },
-    () => [] as ProjectRecord[],
+    () => EMPTY,
   );
 }
 
