@@ -229,7 +229,7 @@ function ResultsPage() {
                       <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} />
                       <YAxis domain={[0, 5]} tickCount={6} tickLine={false} axisLine={false} fontSize={11} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="composite" fill="var(--color-composite)" radius={6} />
+                      <Bar dataKey="composite" fill="var(--color-composite)" maxBarSize={60} radius={6} />
                     </BarChart>
                   </ChartContainer>
                 </CardContent>
