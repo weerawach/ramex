@@ -97,6 +97,8 @@ const SERIES_COLORS = [
   "var(--color-chart-5)",
 ];
 
+const seriesColor = (i: number) => SERIES_COLORS[i % SERIES_COLORS.length] ?? SERIES_COLORS[0]!;
+
 function ActionBar() {
   return (
     <div className="no-print flex flex-wrap gap-2">
@@ -148,7 +150,7 @@ function ResultsPage() {
   const radarConfig: ChartConfig = Object.fromEntries(
     ranked.map((p, i) => [
       p.id,
-      { label: p.name, color: SERIES_COLORS[i % SERIES_COLORS.length] },
+      { label: p.name, color: seriesColor(i) },
     ]),
   );
 
@@ -254,8 +256,8 @@ function ResultsPage() {
                           key={p.id}
                           name={p.name}
                           dataKey={p.id}
-                          stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
-                          fill={SERIES_COLORS[i % SERIES_COLORS.length]}
+                          stroke={seriesColor(i)}
+                          fill={seriesColor(i)}
                           fillOpacity={0.12}
                         />
                       ))}
