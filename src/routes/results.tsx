@@ -1,270 +1,356 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
   Radar,
   RadarChart,
-  PolarGrid,
   PolarAngleAxis,
+  PolarGrid,
   PolarRadiusAxis,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  DIMENSION_LABELS,
-  evaluate,
-  type Assessment,
-  type Result,
-  type Weights,
-} from "@/lib/mcdm";
-import { clearAssessment, loadAssessment } from "@/lib/assessment-store";
-import { AlertTriangle, FileDown, RefreshCw, ShieldX, ShieldCheck } from "lucide-react";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { DIMENSION_LABELS, type Weights } from "@/lib/mcdm";
+import {
+  clearAssessments,
+  loadMockScenarios,
+  useProjects,
+  type ProjectRecord,
+} from "@/lib/assessment-store";
+import {
+  ClipboardList,
+  FileDown,
+  FlaskConical,
+  Plus,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 
 export const Route = createFileRoute("/results")({
   head: () => ({
     meta: [
-      { title: "Decision Dashboard — AI Initiative Evaluation" },
+      { title: "Executive Portfolio Dashboard — AI Initiative Decisions" },
       {
         name: "description",
         content:
-          "Composite SAW score, weighted dimension radar and triggered risk gates for the evaluated retail AI initiative.",
+          "Ranked portfolio of evaluated retail AI initiatives with composite SAW scores, dimension comparison charts and triggered risk gates.",
       },
-      { property: "og:title", content: "Decision Dashboard — AI Initiative Evaluation" },
+      {
+        property: "og:title",
+        content: "Executive Portfolio Dashboard — AI Initiative Decisions",
+      },
       {
         property: "og:description",
         content:
-          "Executive decision output with composite score, radar analysis and risk gate alerts.",
+          "Compare retail AI proposals side by side with composite scores, radar analysis and risk alerts.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ResultsPage,
 });
 
-const STATUS_STYLES: Record<Result["status"], string> = {
+const STATUS_STYLES: Record<ProjectRecord["status"], string> = {
   top: "bg-success text-success-foreground",
   conditional: "bg-info text-info-foreground",
   watch: "bg-warning text-warning-foreground",
   rejected: "bg-destructive text-destructive-foreground",
 };
 
-function ResultsPage() {
-  const navigate = useNavigate();
-  const [assessment, setAssessment] = useState<Assessment | null>(null);
-  const [ready, setReady] = useState(false);
+const DIM_KEYS = Object.keys(DIMENSION_LABELS) as (keyof Weights)[];
+const SERIES_COLORS = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+];
 
-  useEffect(() => {
-    setAssessment(loadAssessment());
-    setReady(true);
-  }, []);
+const seriesColor = (i: number) => SERIES_COLORS[i % SERIES_COLORS.length] ?? SERIES_COLORS[0]!;
 
-  if (!ready) return <div className="min-h-screen bg-background" />;
-
-  if (!assessment) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-6">
-        <div className="surface-panel max-w-md rounded-xl p-8 text-center">
-          <h1 className="text-xl font-bold text-foreground">No assessment found</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Complete the MCDM assessment form to generate a decision output.
-          </p>
-          <Button asChild className="mt-6">
-            <Link to="/">Start an assessment</Link>
+function ActionBar() {
+  return (
+    <div className="no-print flex flex-wrap gap-2">
+      <Button variant="secondary" asChild>
+        <Link to="/">
+          <Plus className="size-4" /> Evaluate new initiative
+        </Link>
+      </Button>
+      <Button variant="secondary" onClick={() => loadMockScenarios()}>
+        <FlaskConical className="size-4" /> Load TC-08 Scenarios
+      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive">
+            <Trash2 className="size-4" /> Clear All Data
           </Button>
-        </div>
-      </div>
-    );
-  }
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone and will permanently delete all evaluated AI
+              project data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => clearAssessments()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete all data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
 
-  const result = evaluate(assessment);
-  const keys = Object.keys(DIMENSION_LABELS) as (keyof Weights)[];
-  const chartData = keys.map((key) => ({
-    dimension: DIMENSION_LABELS[key],
-    score: Number(result.dimensionAverages[key].toFixed(2)),
-    weighted: Number(
-      Math.min(
-        5,
-        result.dimensionAverages[key] * (assessment.weights[key] / 100) * 4,
-      ).toFixed(2),
-    ),
+function ResultsPage() {
+  const projects = useProjects();
+  const ranked = [...projects].sort((a, b) => b.composite - a.composite);
+
+  const barConfig: ChartConfig = {
+    composite: { label: "Composite Score", color: "var(--color-chart-1)" },
+  };
+
+  const radarConfig: ChartConfig = Object.fromEntries(
+    ranked.map((p, i) => [
+      p.id,
+      { label: p.name, color: seriesColor(i) },
+    ]),
+  );
+
+  const barData = ranked.map((p) => ({
+    name: p.name.split("·")[0]?.trim() || p.name,
+    fullName: p.name,
+    composite: Number(p.composite.toFixed(2)),
   }));
-  const hardGates = result.gates.filter((g) => g.level === "hard");
-  const softGates = result.gates.filter((g) => g.level === "soft");
+
+  const radarData = DIM_KEYS.map((key) => {
+    const row: Record<string, string | number> = { dimension: DIMENSION_LABELS[key] };
+    ranked.forEach((p) => {
+      row[p.id] = Number(p.dimensions[key].toFixed(2));
+    });
+    return row;
+  });
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-primary">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-6">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-end justify-between gap-4 px-6 py-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground/60">
               Decision Output
             </p>
             <h1 className="text-2xl font-bold text-primary-foreground">
-              {assessment.initiativeName}
+              Executive AI Portfolio Dashboard
             </h1>
             <p className="text-sm text-primary-foreground/70">
-              Evaluated {new Date(assessment.createdAt).toLocaleString()} · SAW composite
-              method
+              {ranked.length} initiative{ranked.length === 1 ? "" : "s"} evaluated · ranked
+              by SAW composite score
             </p>
           </div>
-          <div className="no-print flex gap-2">
-            <Button variant="secondary" onClick={() => window.print()}>
-              <FileDown className="size-4" /> Export to PDF
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                clearAssessment();
-                navigate({ to: "/" });
-              }}
-            >
-              <RefreshCw className="size-4" /> Evaluate another initiative
-            </Button>
-          </div>
+          <ActionBar />
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        <section className="grid gap-6 lg:grid-cols-[380px_1fr]">
-          <div className="surface-panel flex flex-col items-center justify-center rounded-xl p-8 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Composite score
-            </p>
-            <p className="mt-2 text-6xl font-extrabold tabular-nums text-primary">
-              {result.compositeScore.toFixed(2)}
-              <span className="text-2xl font-semibold text-muted-foreground"> / 5.0</span>
-            </p>
-            <span
-              className={`mt-5 rounded-full px-5 py-2 text-sm font-bold uppercase tracking-wide ${STATUS_STYLES[result.status]}`}
-            >
-              {result.statusLabel}
-            </span>
-            <p className="mt-4 text-xs text-muted-foreground">
-              Weights applied: Bus {assessment.weights.business}% · Data{" "}
-              {assessment.weights.data}% · Tech {assessment.weights.technical}% · Org{" "}
-              {assessment.weights.organizational}%
-            </p>
-          </div>
+        {ranked.length === 0 ? (
+          <Card className="mx-auto max-w-xl">
+            <CardHeader className="items-center text-center">
+              <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-surface text-muted-foreground">
+                <ClipboardList className="size-7" />
+              </span>
+              <CardTitle className="mt-2">No AI initiatives evaluated yet</CardTitle>
+              <CardDescription>
+                Score your first retail AI proposal in the MCDM assessment form, or load the
+                TC-08 demonstration scenarios to preview the portfolio dashboard.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap justify-center gap-2">
+              <Button asChild>
+                <Link to="/">
+                  <Plus className="size-4" /> Evaluate new initiative
+                </Link>
+              </Button>
+              <Button variant="outline" onClick={() => loadMockScenarios()}>
+                <FlaskConical className="size-4" /> Load TC-08 Scenarios
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wide text-primary">
+                    Composite score comparison
+                  </CardTitle>
+                  <CardDescription>Ranked highest to lowest, out of 5.00.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer config={barConfig} className="h-[320px] w-full">
+                    <BarChart data={barData} margin={{ top: 8, right: 8, bottom: 8 }}>
+                      <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                      <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} />
+                      <YAxis domain={[0, 5]} tickCount={6} tickLine={false} axisLine={false} fontSize={11} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="composite" fill="var(--color-composite)" radius={6} />
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
 
-          <div className="surface-panel rounded-xl p-6">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-primary">
-              Dimension profile — weight sensitivity
-            </h2>
-            <div className="h-[360px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={chartData} outerRadius="66%">
-                  <PolarGrid stroke="var(--color-border)" />
-                  <PolarAngleAxis
-                    dataKey="dimension"
-                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                  />
-                  <PolarRadiusAxis
-                    domain={[0, 5]}
-                    tickCount={6}
-                    tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
-                  />
-                  <Radar
-                    name="Raw Score"
-                    dataKey="score"
-                    stroke="var(--color-muted-foreground)"
-                    strokeDasharray="4 3"
-                    fill="var(--color-muted-foreground)"
-                    fillOpacity={0.15}
-                  />
-                  <Radar
-                    name="Weighted Impact"
-                    dataKey="weighted"
-                    stroke="var(--color-primary)"
-                    fill="var(--color-primary)"
-                    fillOpacity={0.5}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--color-card)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: "0.5rem",
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend
-                    verticalAlign="bottom"
-                    height={28}
-                    wrapperStyle={{ fontSize: 12 }}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wide text-primary">
+                    Dimension profile comparison
+                  </CardTitle>
+                  <CardDescription>
+                    Average score per dimension for every initiative.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer config={radarConfig} className="h-[320px] w-full">
+                    <RadarChart data={radarData} outerRadius="65%">
+                      <PolarGrid stroke="var(--color-border)" />
+                      <PolarAngleAxis dataKey="dimension" fontSize={11} />
+                      <PolarRadiusAxis domain={[0, 5]} tickCount={6} fontSize={10} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      {ranked.map((p, i) => (
+                        <Radar
+                          key={p.id}
+                          name={p.name}
+                          dataKey={p.id}
+                          stroke={seriesColor(i)}
+                          fill={seriesColor(i)}
+                          fillOpacity={0.12}
+                        />
+                      ))}
+                      <ChartLegend content={<ChartLegendContent />} />
+                    </RadarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Weighted Impact = dimension score x (weight % / 100) x 4, capped at 5.0.
-            </p>
-          </div>
-        </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {keys.map((key) => (
-            <div key={key} className="surface-panel rounded-xl p-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {DIMENSION_LABELS[key]}
-              </p>
-              <p className="mt-2 text-3xl font-bold tabular-nums text-foreground">
-                {result.dimensionAverages[key].toFixed(2)}
-              </p>
-              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface">
-                <div
-                  className="h-full rounded-full bg-primary"
-                  style={{ width: `${(result.dimensionAverages[key] / 5) * 100}%` }}
-                />
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Weight {assessment.weights[key]}% · contributes{" "}
-                {((result.dimensionAverages[key] * assessment.weights[key]) / 100).toFixed(
-                  2,
-                )}
-              </p>
-            </div>
-          ))}
-        </section>
-
-        <section className="surface-panel rounded-xl p-6">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-primary">
-            Risk alerts
-          </h2>
-          {result.gates.length === 0 ? (
-            <p className="mt-4 flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 p-4 text-sm font-medium text-success">
-              <ShieldCheck className="size-4" /> No hard or soft gates triggered. The
-              initiative is clear to proceed to business case sign-off.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {hardGates.map((gate) => (
-                <div
-                  key={gate.title}
-                  className="flex gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4"
-                >
-                  <ShieldX className="mt-0.5 size-5 shrink-0 text-destructive" />
-                  <div>
-                    <p className="text-sm font-bold text-destructive">{gate.title}</p>
-                    <p className="mt-0.5 text-sm text-foreground/80">{gate.detail}</p>
-                  </div>
+            <Card>
+              <CardHeader className="flex-row items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wide text-primary">
+                    Portfolio ranking
+                  </CardTitle>
+                  <CardDescription>
+                    Dimension averages, composite score, decision status and triggered gates.
+                  </CardDescription>
                 </div>
-              ))}
-              {softGates.map((gate) => (
-                <div
-                  key={gate.title}
-                  className="flex gap-3 rounded-lg border border-warning/50 bg-warning/15 p-4"
+                <Button
+                  variant="outline"
+                  className="no-print"
+                  onClick={() => window.print()}
                 >
-                  <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
-                  <div>
-                    <p className="text-sm font-bold text-warning-foreground">
-                      {gate.title}
-                    </p>
-                    <p className="mt-0.5 text-sm text-foreground/80">{gate.detail}</p>
-                  </div>
+                  <FileDown className="size-4" /> Export to PDF
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">#</TableHead>
+                        <TableHead>Initiative</TableHead>
+                        <TableHead className="text-right">Bus</TableHead>
+                        <TableHead className="text-right">Data</TableHead>
+                        <TableHead className="text-right">Tech</TableHead>
+                        <TableHead className="text-right">Org</TableHead>
+                        <TableHead className="text-right">Composite</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Risk alerts</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ranked.map((p, i) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-semibold tabular-nums text-muted-foreground">
+                            {i + 1}
+                          </TableCell>
+                          <TableCell className="font-medium">{p.name}</TableCell>
+                          {DIM_KEYS.map((key) => (
+                            <TableCell key={key} className="text-right tabular-nums">
+                              {p.dimensions[key].toFixed(2)}
+                            </TableCell>
+                          ))}
+                          <TableCell className="text-right text-base font-bold tabular-nums text-primary">
+                            {p.composite.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-block whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${STATUS_STYLES[p.status]}`}
+                            >
+                              {p.statusLabel}
+                            </span>
+                          </TableCell>
+                          <TableCell className="min-w-[220px]">
+                            {p.alerts.length === 0 ? (
+                              <span className="flex items-center gap-1.5 text-xs font-medium text-success">
+                                <ShieldCheck className="size-3.5" /> None
+                              </span>
+                            ) : (
+                              <ul className="space-y-1">
+                                {p.alerts.map((a) => (
+                                  <li
+                                    key={a}
+                                    className={`text-xs font-medium ${a.startsWith("Hard") ? "text-destructive" : "text-warning-foreground"}`}
+                                  >
+                                    {a}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </main>
     </div>
   );
