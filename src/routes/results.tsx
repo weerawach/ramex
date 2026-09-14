@@ -300,6 +300,7 @@ function ResultsPage() {
                         <TableHead className="text-right">Composite</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Risk alerts</TableHead>
+                        <TableHead className="no-print text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
