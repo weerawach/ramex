@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { evaluate, type Assessment, type Weights } from "./mcdm";
+import { evaluate, type Assessment, type Scores, type Weights } from "./mcdm";
 
 const KEY = "ai-initiative-portfolio";
 
@@ -8,6 +8,8 @@ export type ProjectRecord = {
   name: string;
   dimensions: Record<keyof Weights, number>;
   weights: Weights;
+  /** Raw 1-5 / yes-no inputs, kept so an initiative can be edited later. */
+  scores?: Scores;
   composite: number;
   status: "top" | "conditional" | "watch" | "rejected";
   statusLabel: string;
