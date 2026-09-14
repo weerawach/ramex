@@ -123,7 +123,6 @@ const MOCK: Omit<ProjectRecord, "id" | "createdAt" | "weights">[] = [
     alerts: [
       "Soft Gate — Data Prep Warning",
       "Soft Gate — Integration Risk",
-      "Soft Gate — Scalability Constraint",
     ],
   },
   {
