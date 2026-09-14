@@ -90,6 +90,7 @@ export function saveAssessment(assessment: Assessment) {
       organizational: result.dimensionAverages.organizational,
     },
     weights: assessment.weights,
+    scores: assessment.scores,
     composite: result.compositeScore,
     status: result.status,
     statusLabel: result.statusLabel,
@@ -97,6 +98,47 @@ export function saveAssessment(assessment: Assessment) {
     createdAt: assessment.createdAt,
   });
 }
+
+/**
+ * Updates one initiative by id, re-running the SAW engine on its new inputs.
+ * All other records are preserved exactly as they are.
+ */
+export function updateProject(
+  id: string,
+  patch: { name: string; weights: Weights; scores: Scores },
+) {
+  hydrate();
+  const existing = projects.find((p) => p.id === id);
+  if (!existing) return;
+
+  const result = evaluate({
+    initiativeName: patch.name,
+    weights: patch.weights,
+    scores: patch.scores,
+    createdAt: existing.createdAt,
+  });
+
+  projects = sortDesc(
+    projects.map((p) =>
+      p.id === id
+        ? {
+            ...p,
+            name: patch.name,
+            weights: patch.weights,
+            scores: patch.scores,
+            dimensions: { ...result.dimensionAverages },
+            composite: result.compositeScore,
+            status: result.status,
+            statusLabel: result.statusLabel,
+            alerts: result.gates.map((g) => g.title),
+          }
+        : p,
+    ),
+  );
+  persist();
+  emit();
+}
+
 
 export function clearAssessments() {
   hydrated = true;
