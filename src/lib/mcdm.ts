@@ -139,7 +139,6 @@ export function evaluate(assessment: Assessment): Result {
     ["customerBrandValue", "Low Customer Impact"],
     ["integrationFeasibility", "Integration Risk"],
     ["modelPerformance", "Model Reliability Risk"],
-    ["scalability", "Scalability Constraint"],
     ["finOps", "Cost Exposure Risk"],
     ["userReadiness", "Change Management Risk"],
     ["leadershipSupport", "Sponsorship Risk"],
