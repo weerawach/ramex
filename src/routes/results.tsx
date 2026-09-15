@@ -40,6 +40,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { EditProjectDialog } from "@/components/edit-project-dialog";
 import { DIMENSION_LABELS, type Weights } from "@/lib/mcdm";
 import {
   clearAssessments,
@@ -342,6 +343,9 @@ function ResultsPage() {
                                 ))}
                               </ul>
                             )}
+                          </TableCell>
+                          <TableCell className="no-print text-right">
+                            <EditProjectDialog project={p} />
                           </TableCell>
                         </TableRow>
                       ))}
