@@ -343,6 +343,9 @@ function ResultsPage() {
                               </ul>
                             )}
                           </TableCell>
+                          <TableCell className="no-print text-right">
+                            <EditProjectDialog project={p} />
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
