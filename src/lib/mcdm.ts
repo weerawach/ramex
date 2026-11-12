@@ -133,16 +133,9 @@ export function evaluate(assessment: Assessment): Result {
   }
 
   const softChecks: Array<[keyof Scores, string]> = [
-    ["qualityAccessibility", "Data Prep Warning"],
-    ["financialImpact", "Weak Business Case"],
-    ["operationalEfficiency", "Limited Efficiency Gain"],
-    ["customerBrandValue", "Low Customer Impact"],
-    ["integrationFeasibility", "Integration Risk"],
-    ["modelPerformance", "Model Reliability Risk"],
-    ["finOps", "Cost Exposure Risk"],
-    ["userReadiness", "Change Management Risk"],
-    ["leadershipSupport", "Sponsorship Risk"],
-    ["humanOversight", "Oversight Gap"],
+    ["qualityAccessibility", "Data Preparation Warning"],
+    ["integrationFeasibility", "Integration Bottleneck Alert"],
+    ["humanOversight", "Oversight Gap Alert"],
   ];
 
   for (const [key, label] of softChecks) {
@@ -151,7 +144,7 @@ export function evaluate(assessment: Assessment): Result {
       gates.push({
         level: "soft",
         title: `Soft Gate — ${label}`,
-        detail: `${SCALE_LABELS[key]} scored ${value}/5. Mitigation plan required before rollout.`,
+        detail: `${SCALE_LABELS[key]} scored ${value}/5. A documented mitigation plan and reassessment are required before implementation.`,
       });
     }
   }
