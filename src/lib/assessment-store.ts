@@ -106,10 +106,10 @@ export function saveAssessment(assessment: Assessment) {
 export function updateProject(
   id: string,
   patch: { name: string; weights: Weights; scores: Scores },
-) {
+): boolean {
   hydrate();
   const existing = projects.find((p) => p.id === id);
-  if (!existing) return;
+  if (!existing) return false;
 
   const result = evaluate({
     initiativeName: patch.name,
@@ -137,8 +137,20 @@ export function updateProject(
   );
   persist();
   emit();
+  return true;
 }
 
+/** Removes one initiative while preserving and re-ranking every other record. */
+export function deleteProject(id: string): boolean {
+  hydrate();
+  const nextProjects = projects.filter((project) => project.id !== id);
+  if (nextProjects.length === projects.length) return false;
+
+  projects = sortDesc(nextProjects);
+  persist();
+  emit();
+  return true;
+}
 
 export function clearAssessments() {
   hydrated = true;

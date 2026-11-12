@@ -10,6 +10,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ScaleField, BinaryField } from "@/components/assessment-fields";
 import { WeightConfig } from "@/components/weight-config";
 import {
@@ -18,8 +29,9 @@ import {
   type Scores,
   type Weights,
 } from "@/lib/mcdm";
-import { updateProject, type ProjectRecord } from "@/lib/assessment-store";
-import { Pencil, ShieldAlert } from "lucide-react";
+import { deleteProject, updateProject, type ProjectRecord } from "@/lib/assessment-store";
+import { Pencil, ShieldAlert, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function EditProjectDialog({ project }: { project: ProjectRecord }) {
   const [open, setOpen] = useState(false);
@@ -60,11 +72,19 @@ export function EditProjectDialog({ project }: { project: ProjectRecord }) {
 
   const save = () => {
     if (!weightsValid) return;
-    updateProject(project.id, {
+    const updated = updateProject(project.id, {
       name: name.trim() || project.name,
       weights,
       scores,
     });
+    if (!updated) return;
+    toast.success("Initiative updated");
+    setOpen(false);
+  };
+
+  const remove = () => {
+    if (!deleteProject(project.id)) return;
+    toast.success("Initiative deleted");
     setOpen(false);
   };
 
@@ -201,36 +221,66 @@ export function EditProjectDialog({ project }: { project: ProjectRecord }) {
         </div>
 
         <DialogFooter className="mt-6 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-left">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Recalculated composite
-            </p>
-            <p className="text-2xl font-bold tabular-nums text-primary">
-              {weightsValid ? preview.compositeScore.toFixed(2) : "—"}
-              <span className="ml-1 text-sm font-medium text-muted-foreground">
-                / 5.00
-              </span>
-            </p>
-            {preview.gates.length > 0 && (
-              <p className="flex items-center gap-1.5 text-xs font-medium text-warning-foreground">
-                <ShieldAlert className="size-3.5 text-warning" />
-                {preview.gates.length} risk gate
-                {preview.gates.length > 1 ? "s" : ""} triggered
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="size-4" /> Delete Project
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Initiative?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to remove {project.name} from the portfolio? This action
+                  cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={remove}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-left">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Recalculated composite
               </p>
-            )}
-            {!weightsValid && (
-              <p className="text-xs font-medium text-destructive">
-                Weights must total exactly 100%.
+              <p className="text-2xl font-bold tabular-nums text-primary">
+                {weightsValid ? preview.compositeScore.toFixed(2) : "—"}
+                <span className="ml-1 text-sm font-medium text-muted-foreground">
+                  / 5.00
+                </span>
               </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={save} disabled={!weightsValid}>
-              Calculate &amp; save
-            </Button>
+              {preview.gates.length > 0 && (
+                <p className="flex items-center gap-1.5 text-xs font-medium text-warning-foreground">
+                  <ShieldAlert className="size-3.5 text-warning" />
+                  {preview.gates.length} risk gate
+                  {preview.gates.length > 1 ? "s" : ""} triggered
+                </p>
+              )}
+              {!weightsValid && (
+                <p className="text-xs font-medium text-destructive">
+                  Weights must total exactly 100%.
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={save} disabled={!weightsValid}>
+                Calculate &amp; save
+              </Button>
+            </div>
           </div>
         </DialogFooter>
       </DialogContent>

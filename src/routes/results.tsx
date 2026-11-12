@@ -44,10 +44,12 @@ import { EditProjectDialog } from "@/components/edit-project-dialog";
 import { DIMENSION_LABELS, type Weights } from "@/lib/mcdm";
 import {
   clearAssessments,
+  deleteProject,
   loadMockScenarios,
   useProjects,
   type ProjectRecord,
 } from "@/lib/assessment-store";
+import { toast } from "sonner";
 import {
   ClipboardList,
   FileDown,
@@ -345,7 +347,43 @@ function ResultsPage() {
                             )}
                           </TableCell>
                           <TableCell className="no-print text-right">
-                            <EditProjectDialog project={p} />
+                            <div className="flex justify-end gap-2">
+                              <EditProjectDialog project={p} />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                    aria-label={`Delete ${p.name}`}
+                                  >
+                                    <Trash2 className="size-3.5" /> Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Initiative?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to remove {p.name} from the portfolio? This
+                                      action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => {
+                                        if (deleteProject(p.id)) {
+                                          toast.success("Initiative deleted");
+                                        }
+                                      }}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
