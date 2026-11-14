@@ -150,11 +150,21 @@ export function evaluate(assessment: Assessment): Result {
   }
 
   const hardFail = gates.some((g) => g.level === "hard");
+
+  // Handle floating-point errors at the score boundaries.
+  const SCORE_EPSILON = 1e-10;
+
   let status: Result["status"];
-  if (hardFail) status = "rejected";
-  else if (compositeScore >= 4) status = "top";
-  else if (compositeScore >= 3) status = "conditional";
-  else status = "watch";
+
+  if (hardFail) {
+    status = "rejected";
+  } else if (compositeScore >= 4 - SCORE_EPSILON) {
+    status = "top";
+  } else if (compositeScore >= 3 - SCORE_EPSILON) {
+    status = "conditional";
+  } else {
+    status = "watch";
+  }
 
   const statusLabel = {
     rejected: "REJECTED / HIGH RISK",
